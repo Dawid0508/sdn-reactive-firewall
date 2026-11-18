@@ -53,7 +53,7 @@ instaluje regułę blokującą. Opisano trzy algorytmy progowe:
   dwudziestu portów TCP najczęściej odpytywanych przez skanery. Przekroczenie
   progu liczby *różnych* portów w zadanym oknie czasowym klasyfikuje hosta jako
   skaner. Algorytm mierzy szerokość skanu, a nie wolumen ruchu.
-- **Credit-Based Threshold Random Walk** — zliczanie nieodwzajemnionych prób
+- **Credit-Based Threshold Random Walk** - zliczanie nieodwzajemnionych prób
   połączenia. Każdy pakiet TCP SYN zwiększa licznik hosta, każdy SYN/ACK od
   serwera go zmniejsza. Host trafiający w zamknięte porty narasta licznik aż do
   progu i zostaje zablokowany.
