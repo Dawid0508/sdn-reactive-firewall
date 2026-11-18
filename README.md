@@ -30,9 +30,7 @@ dopasowuje ruch po **adresie MAC** źródła (`dl_src`), ponieważ `hping3 -a`
 podmienia wyłącznie nagłówek warstwy 3. Działa to tylko dlatego, że przełącznik
 jest przełącznikiem brzegowym samego atakującego.
 
-**Co z tego bierzemy:** architekturę z portem lustrzanym, sposób przekazywania
-alertów ze Snorta do kontrolera, logikę instalowania reguł blokujących oraz całą
-metodykę pomiarową wraz ze scenariuszami testowymi.
+**Co z tego bierzemy:** architekturę z portem lustrzanym (Port Mirroring), sposób przekazywania alertów ze Snorta do kontrolera Ryu przez gniazdo uniksowe oraz logikę instalowania reguł blokujących. Z metodyki testowej wybieramy jeden scenariusz - podstawowy atak zalewowy generowany narzędziem `hping3 --flood` - oraz pomiar czasu mitygacji, RTT i strat pakietów.
 
 ### Artykuł 2
 
@@ -65,21 +63,13 @@ pakiety, które chybiły tablicę przepływów. Dla skanowania portów to wystar
 skan generuje lawinę nowych przepływów. Do wykrywania ataków zalewowych autorzy
 dołożyli osobną ścieżkę opartą na cyklicznym odpytywaniu statystyk przepływów.
 
-**Co z tego bierzemy:** reimplementację algorytmów Port Bingo oraz Rate Limiting
-jako własnego modułu kontrolera Ryu, drugą klasę ataku w postaci skanowania portów
-oraz sposób oceny skuteczności przez pomiar fałszywych alarmów i przeoczeń.
+**Co z tego bierzemy:** reimplementację jednego wybranego mechanizmu - algorytmu Rate Limiting - jako własnego modułu w kontrolerze Ryu do wykrywania ataków zalewowych DoS, oraz sposób oceny czułości algorytmu poprzez pomiar liczby fałszywych alarmów (false positives) przy różnym natężeniu ruchu.
 
 ## 2. Zakres własny
 
-Obie publikacje instalują reguły blokujące na stałe - zablokowany host nie
-odzyskuje łączności bez interwencji administratora. W naszym rozwiązaniu reguły
-wygasają automatycznie dzięki polom `idle_timeout` i `hard_timeout` protokołu
-OpenFlow, co pozwala zbadać zależność między czasem utrzymywania blokady a liczbą
-niepotrzebnie odciętych hostów.
+Obie publikacje instalują reguły blokujące na stałe - zablokowany host nie odzyskuje łączności bez interwencji administratora. W naszym rozwiązaniu reguły wygasają automatycznie dzięki polom `idle_timeout` i `hard_timeout` protokołu OpenFlow, co pozwala zbadać zależność między czasem utrzymywania blokady a odzyskiwaniem łączności przez niesłusznie zablokowane hosty.
 
-Drugim elementem własnym jest zestawienie na jednym stanowisku detekcji
-sygnaturowej (Snort, za artykułem 1) i progowej (własny moduł, za artykułem 2)
-oraz porównanie obu metod pod kątem czasu reakcji i liczby fałszywych alarmów.
+Drugim elementem własnym jest bezpośrednie porównanie na wspólnym stanowisku dwóch podejść do zwalczania ataków zalewowych (DoS): detekcji sygnaturowej (zewnętrzny Snort IDS z artykułu 1) oraz detekcji progowej (własny moduł Rate Limiting w kontrolerze Ryu z artykułu 2) pod kątem czasu reakcji (mitygacji) oraz podatności na fałszywe alarmy.
 
 ## 3. Wykorzystywane technologie
 
@@ -89,9 +79,8 @@ oraz porównanie obu metod pod kątem czasu reakcji i liczby fałszywych alarmó
 | Open vSwitch | Przełączanie ruchu i obsługa OpenFlow |
 | Ryu Controller | Zarządzanie siecią SDN i instalowanie reguł przepływu |
 | Snort IDS | Sygnaturowa detekcja złośliwego ruchu |
-| Python | Implementacja topologii i logiki detekcji |
-| hping3 | Generowanie ruchu atakującego typu flood |
-| nmap | Generowanie ruchu skanującego porty |
+| Python | Implementacja topologii i logiki detekcji (Rate Limiting) |
+| hping3 | Generowanie ruchu atakującego typu flood (DoS) |
 | Wireshark | Analiza i monitorowanie ruchu sieciowego |
 
 ## 4. Topologia
@@ -209,5 +198,4 @@ Przykładowy atak:
 
 ```bash
 mininet> h1 hping3 --flood --icmp 10.0.0.2
-mininet> h1 nmap -sS 10.0.0.2
 ```
