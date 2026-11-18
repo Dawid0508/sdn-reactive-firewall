@@ -96,27 +96,59 @@ oraz porównanie obu metod pod kątem czasu reakcji i liczby fałszywych alarmó
 
 ## 4. Topologia
 
+### Obecna Topologia
+
 ```mermaid
 flowchart TB
     subgraph NET["Mininet"]
-        H1["h1 — atakujący<br/>10.0.0.1/24<br/>00:00:00:00:00:01"]
-        H2["h2 — ofiara<br/>10.0.0.2/24<br/>00:00:00:00:00:02"]
-        H3["h3 — klient<br/>10.0.0.3/24<br/>00:00:00:00:00:03"]
-        IDS["ids — Snort<br/>10.0.0.4/24<br/>00:00:00:00:00:04"]
+        H1["H1 — Attacker<br/>10.0.0.1/24"]
+        H2["H2 — Victim<br/>10.0.0.2/24"]
+        H3["H3 — Legal Client<br/>10.0.0.3/24"]
 
-        S1["s1 — Open vSwitch<br/>OpenFlow 1.3<br/>failMode=secure"]
+        S1["S1 — Open vSwitch<br/>OpenFlow 1.3"]
 
-        H1 ---|"port 1"| S1
-        H2 ---|"port 2"| S1
-        H3 ---|"port 3"| S1
-        S1 -.->|"port 4<br/>kopia ruchu"| IDS
+        H1 --- S1
+        H2 --- S1
+        H3 --- S1
     end
 
     RYU["Ryu Controller<br/>127.0.0.1:6653"]
 
-    S1 <-->|"OpenFlow 1.3"| RYU
-    IDS -.->|"alert<br/>Unix Domain Socket"| RYU
-    RYU -->|"instalacja i usuwanie<br/>reguł blokujących"| S1
+    S1 <-->|"OpenFlow 1.3<br/>Flow Rules"| RYU
+
+    classDef host fill:#dbeafe,stroke:#2563eb,color:#1e3a8a
+    classDef switch fill:#dcfce7,stroke:#16a34a,color:#14532d
+    classDef controller fill:#fef3c7,stroke:#d97706,color:#78350f
+
+    class H1,H2,H3 host
+    class S1 switch
+    class RYU controller
+```
+
+### Schemat docelowej topologii
+
+```mermaid
+flowchart TB
+    subgraph NET["Mininet"]
+        H1["H1 — Attacker<br/>10.0.0.1/24"]
+        H2["H2 — Victim<br/>10.0.0.2/24"]
+        H3["H3 — Legal Client<br/>10.0.0.3/24"]
+
+        S1["S1 — Open vSwitch<br/>OpenFlow 1.3"]
+
+        H1 --- S1
+        H2 --- S1
+        H3 --- S1
+    end
+
+    RYU["Ryu Controller<br/>Python"]
+    SNORT["Snort IDS<br/>Detection Engine"]
+
+    S1 <-->|"OpenFlow 1.3<br/>Flow Rules"| RYU
+    S1 -.->|"Mirrored Traffic"| SNORT
+    SNORT -.->|"Detection Alert<br/>Unix Domain Socket"| RYU
+
+    RYU -->|"Install / Remove<br/>Blocking Rules"| S1
 
     classDef host fill:#dbeafe,stroke:#2563eb,color:#1e3a8a
     classDef switch fill:#dcfce7,stroke:#16a34a,color:#14532d
@@ -126,42 +158,43 @@ flowchart TB
     class H1,H2,H3 host
     class S1 switch
     class RYU controller
-    class IDS ids
+    class SNORT ids
 ```
+
 
 ### Elementy topologii
 
-- **h1 — atakujący:** generuje ruch atakujący (hping3, nmap).
-- **h2 — ofiara:** host będący celem ataku.
-- **h3 — klient:** generuje ruch legalny, służy do pomiaru wpływu ataku na QoS.
-- **ids — Snort:** host analizujący kopię ruchu z portu lustrzanego.
-- **s1 — Open vSwitch:** przełącznik OpenFlow 1.3 z portem lustrzanym na porcie 4.
-- **Ryu Controller:** kontroler instalujący reguły blokujące.
-
-Adresy MAC są przypisane na sztywno, ponieważ reguły blokujące dopasowują ruch po
-adresie źródłowym warstwy 2 — przy adresach losowanych przez Mininet reguły
-trzeba byłoby budować od nowa przy każdym uruchomieniu.
-
-Przełącznik pracuje w trybie `failMode=secure`, więc bez działającego kontrolera
-nie przepuszcza żadnego ruchu. Dla firewalla to jedyne poprawne ustawienie —
-awaria kontrolera nie może otwierać sieci.
+- **H1 – Attacker:** host generujący ruch atakujący.
+- **H2 – Victim:** serwer będący celem ataku.
+- **H3 – Client:** host generujący legalny ruch.
+- **S1 – Open vSwitch:** przełącznik obsługujący protokół OpenFlow.
+- **Ryu Controller:** centralny kontroler zarządzający przełącznikiem.
+- **Snort IDS:** system analizujący kopiowany ruch sieciowy.
 
 ## 5. Uruchomienie
 
-Wymagania: Ubuntu 22.04, Mininet, Open vSwitch, Ryu, Snort.
+Wymagania: Mininet, Open vSwitch, Ryu.
 
-Ryu nie jest już rozwijany i nie uruchamia się na Pythonie 3.12 ze względu na
-usunięcie z biblioteki standardowej modułu `distutils`. Stąd Ubuntu 22.04
-z Pythonem 3.10, a nie nowsze wydanie.
+Ryu nie jest już rozwijany i nie działa na nowych wersjach Pythona, dlatego
+instalujemy go w osobnym środowisku z Pythonem 3.9 (sprawdzone na Ubuntu 24.04
+w WSL):
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+~/.local/bin/uv venv ~/ryu-venv --python 3.9
+~/.local/bin/uv pip install --python ~/ryu-venv/bin/python "setuptools==67.6.1" wheel pbr
+~/.local/bin/uv pip install --python ~/ryu-venv/bin/python --no-build-isolation ryu eventlet==0.30.2
+```
 
 Kolejność uruchamiania ma znaczenie — przy `failMode=secure` sieć bez kontrolera
 nie przepuszcza ruchu.
 
 ```bash
 # 1. kontroler
-ryu-manager firewall.py
+~/ryu-venv/bin/ryu-manager ryu.app.simple_switch_13
 
 # 2. topologia (w drugim terminalu)
+sudo service openvswitch-switch start
 sudo python3 topology.py
 ```
 
@@ -170,7 +203,6 @@ Weryfikacja w konsoli Mininetu:
 ```bash
 mininet> pingall
 mininet> sh ovs-ofctl -O OpenFlow13 dump-flows s1
-mininet> sh ovs-vsctl list Mirror ids_mirror
 ```
 
 Przykładowy atak:
