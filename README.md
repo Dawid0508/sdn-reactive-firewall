@@ -1,6 +1,6 @@
 # sdn-reactive-firewall
 
-Reaktywny firewall dla sieci SDN — wykrywanie ataków przy pomocy Snort IDS oraz
+Reaktywny firewall dla sieci SDN - wykrywanie ataków przy pomocy Snort IDS oraz
 własnych algorytmów behawioralnych, a następnie automatyczne instalowanie reguł
 blokujących w przełączniku OpenFlow przez kontroler Ryu.
 
@@ -44,11 +44,11 @@ DOI: [10.1016/j.jnca.2019.03.005](https://doi.org/10.1016/j.jnca.2019.03.005) ·
 [pełny tekst](https://eprints.whiterose.ac.uk/id/eprint/144195/1/SDN_IDPS_Birkinshaw_et_al.pdf)
 
 Autorzy zaproponowali system IDPS zrealizowany jako moduł kontrolera POX. W
-odróżnieniu od artykułu 1 nie korzystają z zewnętrznego IDS-a — detekcja odbywa
+odróżnieniu od artykułu 1 nie korzystają z zewnętrznego IDS-a - detekcja odbywa
 się na podstawie przechwytywanych zdarzeń PacketIn, a ten sam moduł od razu
 instaluje regułę blokującą. Opisano trzy algorytmy progowe:
 
-- **Port Bingo** — wykrywanie skanowania portów. Dla każdej pary hostów system
+- **Port Bingo** - wykrywanie skanowania portów. Dla każdej pary hostów system
   prowadzi zbiór odwiedzonych portów docelowych należących do listy około
   dwudziestu portów TCP najczęściej odpytywanych przez skanery. Przekroczenie
   progu liczby *różnych* portów w zadanym oknie czasowym klasyfikuje hosta jako
@@ -57,7 +57,7 @@ instaluje regułę blokującą. Opisano trzy algorytmy progowe:
   połączenia. Każdy pakiet TCP SYN zwiększa licznik hosta, każdy SYN/ACK od
   serwera go zmniejsza. Host trafiający w zamknięte porty narasta licznik aż do
   progu i zostaje zablokowany.
-- **Rate Limiting** — ograniczanie liczby nowych połączeń w jednostce czasu,
+- **Rate Limiting** - ograniczanie liczby nowych połączeń w jednostce czasu,
   rozszerzone przez autorów na ruch TCP, UDP oraz ICMP.
 
 Ograniczenie wynikające z architektury: detekcja oparta na PacketIn widzi wyłącznie
