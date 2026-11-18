@@ -71,7 +71,7 @@ oraz sposób oceny skuteczności przez pomiar fałszywych alarmów i przeoczeń.
 
 ## 2. Zakres własny
 
-Obie publikacje instalują reguły blokujące na stałe — zablokowany host nie
+Obie publikacje instalują reguły blokujące na stałe - zablokowany host nie
 odzyskuje łączności bez interwencji administratora. W naszym rozwiązaniu reguły
 wygasają automatycznie dzięki polom `idle_timeout` i `hard_timeout` protokołu
 OpenFlow, co pozwala zbadać zależność między czasem utrzymywania blokady a liczbą
@@ -186,7 +186,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 ~/.local/bin/uv pip install --python ~/ryu-venv/bin/python --no-build-isolation ryu eventlet==0.30.2
 ```
 
-Kolejność uruchamiania ma znaczenie — przy `failMode=secure` sieć bez kontrolera
+Kolejność uruchamiania ma znaczenie - przy `failMode=secure` sieć bez kontrolera
 nie przepuszcza ruchu.
 
 ```bash
